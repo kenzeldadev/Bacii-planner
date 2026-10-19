@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+html, body, #root { height: 100%; }
+body { margin: 0; background: #f3f4f6; color: #1f2937; }
+
+#app[lang='km'] { font-family: 'Noto Sans Khmer', system-ui, sans-serif; }
+
+#app[data-theme='dark'] {
+  color-scheme: dark;
+  background: #111827;
+  color: #f3f4f6;
+}
+
+#app[data-theme='dark'] .bg-white { background-color: #1f2937; }
+#app[data-theme='dark'] .bg-gray-50 { background-color: #111827; }
+#app[data-theme='dark'] .bg-gray-100 { background-color: #111827; }
+#app[data-theme='dark'] .border-gray-200,
+#app[data-theme='dark'] .border-gray-300 { border-color: #374151; }
+#app[data-theme='dark'] .text-gray-900 { color: #f9fafb; }
+#app[data-theme='dark'] .text-gray-700 { color: #d1d5db; }
+#app[data-theme='dark'] .text-gray-500 { color: #9ca3af; }
+#app[data-theme='dark'] .text-gray-600 { color: #9ca3af; }
+#app[data-theme='dark'] .bg-blue-50 { background-color: #1e3a5f; }
+#app[data-theme='dark'] .text-blue-700 { color: #93c5fd; }
+#app[data-theme='dark'] input:not([type='checkbox']),
+#app[data-theme='dark'] textarea,
+#app[data-theme='dark'] select { background-color: #111827; color: #f3f4f6; }
+#app[data-theme='dark'] .react-flow { background-color: #111827; }
+#app[data-theme='dark'] .react-flow__controls button {
+  background: #1f2937;
+  fill: #f3f4f6;
+  color: #f3f4f6;
+  border-color: #374151;
+}
+
+#app .react-flow__node {
+  cursor: grab;
+  transition: box-shadow 150ms ease;
+  touch-action: none;
+}
+
+#app .react-flow__node:active,
+#app .react-flow__node.dragging {
+  cursor: grabbing;
+}
+
+#app .react-flow__node.dragging {
+  z-index: 1000 !important;
+}
+
+#app .react-flow__node:hover {
+  filter: drop-shadow(0 5px 8px rgb(15 23 42 / 14%));
+}
+
+#app[data-theme='dark'] .react-flow__node:hover {
+  filter: drop-shadow(0 5px 8px rgb(0 0 0 / 35%));
+}
+
+#app .react-flow__node.selected {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+#app .react-flow.selection-mode .react-flow__pane {
+  cursor: crosshair;
+}
+
+#app .react-flow__selection {
+  background: rgb(37 99 235 / 12%);
+  border: 1px solid rgb(37 99 235 / 65%);
+  border-radius: 6px;
+}
+
+#app .lesson-confidence-shaky {
+  animation: shaky-confidence-pulse 2.4s ease-in-out infinite;
+}
+
+#app .lesson-confidence-okay {
+  box-shadow: 0 0 0 1px rgb(234 179 8 / 12%);
+}
+
+#app .lesson-confidence-solid {
+  box-shadow: 0 0 0 1px rgb(34 197 94 / 12%);
+}
+
+@keyframes shaky-confidence-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(239 68 68 / 12%);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgb(239 68 68 / 20%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app .lesson-confidence-shaky {
+    animation: none;
+  }
+}
