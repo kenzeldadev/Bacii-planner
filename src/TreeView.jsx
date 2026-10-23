@@ -461,7 +461,7 @@ function layout(nodes, edges) {
 
 /* ---------- main component ---------- */
 
-function Tree({ userEmail, language, nightMode }) {
+function Tree({ userEmail, userId, language, nightMode }) {
   const { fitView, zoomIn, zoomOut, getNodes } = useReactFlow()
   const [data, setData] = useState({ subjects: [], chapters: [], lessons: [], notes: [] })
   const [nodePositions, setNodePositions] = useState(() => {
@@ -477,6 +477,7 @@ function Tree({ userEmail, language, nightMode }) {
       return {}
     }
   })
+  const [positionsLoaded, setPositionsLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   // Subjects start expanded; chapters start collapsed.
@@ -527,17 +528,62 @@ function Tree({ userEmail, language, nightMode }) {
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
-    const [s, c, l, n] = await Promise.all([
+    const [s, c, l, n, savedLayout] = await Promise.all([
       supabase.from('subjects').select('*').order('sort_order'),
       supabase.from('chapters').select('*').order('sort_order'),
       supabase.from('lessons').select('*').order('sort_order'),
       supabase.from('notes').select('*').order('created_at', { ascending: false }),
+      supabase
+        .from('tree_layouts')
+        .select('node_positions')
+        .eq('user_id', userId)
+        .maybeSingle(),
     ])
     const err = s.error || c.error || l.error || n.error
     if (err) setError(err.message)
     else setData({ subjects: s.data, chapters: c.data, lessons: l.data, notes: n.data })
+
+    if (savedLayout.error) {
+      setError((current) => current || savedLayout.error.message)
+    } else if (savedLayout.data?.node_positions) {
+      const positions = savedLayout.data.node_positions
+      if (typeof positions === 'object' && !Array.isArray(positions)) {
+        setNodePositions(positions)
+      } else {
+        setError('Saved tree positions have an invalid format.')
+      }
+    } else {
+      const savedLocally = localStorage.getItem(`bacii-node-positions-${userEmail}`)
+      if (savedLocally) {
+        try {
+          const positions = JSON.parse(savedLocally)
+          if (positions && typeof positions === 'object' && !Array.isArray(positions)) {
+            setNodePositions(positions)
+            if (Object.keys(positions).length > 0) {
+              try {
+                const { error: migrationError } = await supabase.from('tree_layouts').upsert({
+                  user_id: userId,
+                  node_positions: positions,
+                })
+                if (migrationError) setError((current) => current || migrationError.message)
+              } catch (migrationError) {
+                setError((current) =>
+                  current ||
+                  (migrationError instanceof Error
+                    ? migrationError.message
+                    : String(migrationError))
+                )
+              }
+            }
+          }
+        } catch (restoreError) {
+          console.error('Could not restore saved tree positions.', restoreError)
+        }
+      }
+    }
+    setPositionsLoaded(true)
     setLoading(false)
-  }, [])
+  }, [userEmail, userId])
 
   useEffect(() => {
     load()
@@ -1065,12 +1111,28 @@ function Tree({ userEmail, language, nightMode }) {
           minZoom={0.05}
           maxZoom={2.25}
           onMove={(_event, viewport) => setZoomPercent(Math.round(viewport.zoom * 100))}
-          onNodeDragStop={(_event, node) => {
+          onNodeDragStop={async () => {
             const positions = getNodes().reduce((current, currentNode) => {
               current[currentNode.id] = currentNode.position
               return current
             }, {})
-            setNodePositions((current) => ({ ...current, ...positions }))
+            const nextPositions = { ...nodePositions, ...positions }
+            setNodePositions(nextPositions)
+            localStorage.setItem(
+              `bacii-node-positions-${userEmail}`,
+              JSON.stringify(nextPositions)
+            )
+            if (!positionsLoaded) return
+
+            try {
+              const { error: saveError } = await supabase.from('tree_layouts').upsert({
+                user_id: userId,
+                node_positions: nextPositions,
+              })
+              if (saveError) setError(saveError.message)
+            } catch (saveError) {
+              setError(saveError instanceof Error ? saveError.message : String(saveError))
+            }
           }}
           onNodeClick={(event, node) => {
             if (!event.shiftKey && (node.type === 'subject' || node.type === 'chapter')) {

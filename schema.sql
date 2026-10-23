@@ -55,3 +55,27 @@ begin
     execute format('create policy "auth delete" on %I for delete to authenticated using (true)', t);
   end loop;
 end $$;
+
+create table if not exists tree_layouts (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  node_positions jsonb not null default '{}'::jsonb
+);
+
+alter table tree_layouts enable row level security;
+
+drop policy if exists "users read own tree layout" on tree_layouts;
+drop policy if exists "users insert own tree layout" on tree_layouts;
+drop policy if exists "users update own tree layout" on tree_layouts;
+
+create policy "users read own tree layout"
+  on tree_layouts for select to authenticated
+  using (auth.uid() = user_id);
+
+create policy "users insert own tree layout"
+  on tree_layouts for insert to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "users update own tree layout"
+  on tree_layouts for update to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

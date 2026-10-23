@@ -172,7 +172,12 @@ export default function App() {
       </header>
       <main className="min-h-0 flex-1">
         {session ? (
-          <TreeView userEmail={email} language={language} nightMode={nightMode} />
+          <TreeView
+            userEmail={email}
+            userId={session.user.id}
+            language={language}
+            nightMode={nightMode}
+          />
         ) : (
           <LoginForm language={language} />
         )}
